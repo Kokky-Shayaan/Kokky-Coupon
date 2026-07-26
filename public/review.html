@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Layout review — Coupon Generator</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #fffdf8;
+      --ink: #1f2937;
+      --accent: #0f766e;
+      --accent-2: #115e59;
+      --line: #d6d3d1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 12px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    header h1 { margin: 0; font-size: 1.1rem; }
+    header .meta { font-size: 0.85rem; color: #6b7280; }
+    .wrap {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      flex: 1;
+      min-height: 0;
+    }
+    @media (max-width: 900px) {
+      .wrap { grid-template-columns: 1fr; }
+    }
+    .controls {
+      padding: 16px;
+      overflow-y: auto;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+    }
+    .controls h2 { margin: 0 0 12px; font-size: 0.95rem; }
+    .controls p { margin: 0 0 14px; font-size: 0.82rem; color: #6b7280; }
+    .ctrl {
+      margin-bottom: 12px;
+    }
+    .ctrl label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .ctrl-row {
+      display: grid;
+      grid-template-columns: 1fr 72px auto;
+      align-items: center;
+      gap: 8px;
+    }
+    .ctrl input[type="range"] { width: 100%; min-width: 0; }
+    .ctrl input.num {
+      width: 100%;
+      padding: 4px 6px;
+      font: inherit;
+      font-size: 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      text-align: right;
+    }
+    .ctrl .unit { font-size: 0.72rem; color: #6b7280; }
+    .ctrl select {
+      width: 100%;
+      padding: 5px 6px;
+      font: inherit;
+      font-size: 0.82rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+    }
+    h3.ctrl-group {
+      margin: 20px 0 10px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 4px;
+    }
+    h3.ctrl-group:first-child { margin-top: 0; }
+    .preview-host {
+      padding: 12px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-host iframe {
+      flex: 1;
+      width: 100%;
+      min-height: 480px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    .actions {
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+    }
+    button, .btn {
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      padding: 10px 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    button:hover, .btn:hover { background: var(--accent-2); }
+    button.secondary { background: #4b5563; }
+    #msg { font-size: 0.9rem; margin: 0; }
+    #msg.error { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HTML layout review</h1>
+    <span class="meta" id="headerMeta"></span>
+    <a class="btn secondary" href="/" style="background:#374151;">← Back</a>
+  </header>
+  <div class="wrap">
+    <aside class="controls">
+      <h2>Micro-adjustments (live)</h2>
+      <p>Drag a slider or type an exact number in the box beside it — the preview updates immediately. All values are in mm; negative moves up or left. Blank uses the design default.</p>
+      <button type="button" id="resetBtn" class="secondary" style="margin-bottom:14px;">Reset all to defaults</button>
+      <div id="sliders"></div>
+    </aside>
+    <div class="preview-host">
+      <iframe id="frame" title="Coupon preview"></iframe>
+    </div>
+  </div>
+  <footer class="actions">
+    <form id="genForm" method="post" action="/api/generate" enctype="multipart/form-data" style="display:contents;">
+      <!-- Populated from sessionStorage; stagingId = no file re-upload -->
+      <input type="hidden" name="stagingId" id="stagingId" />
+      <input type="hidden" name="voucherType" id="voucherType" />
+      <input type="hidden" name="discountText" id="discountText" />
+      <input type="hidden" name="giftValue" id="giftValue" />
+      <input type="hidden" name="validUntil" id="validUntil" />
+      <input type="hidden" name="size" id="size" />
+      <!-- layout_* added by JS before submit -->
+      <button type="submit" id="genBtn">Generate PDF with current layout</button>
+    </form>
+    <a id="downloadAfter" class="btn" href="#" hidden download="coupons.pdf">Download PDF</a>
+    <span id="msg"></span>
+  </footer>
+
+  <script>
+    /* Must stay in sync with LAYOUT_KEYS in render_pdf.js.
+       type "mm"   → slider + number box, value sent as "<n>mm"
+       type "font" → dropdown, value sent verbatim
+       min < 0     → the control can go negative (up / left)
+       def         → the design default, shown as placeholder in the box */
+    const LAYOUT_KEYS = [
+      { group: "Gift value / discount text (red strip)" },
+      { key: "stripShiftVertical",     label: "Move up / down",        type: "mm", min: -20, max: 20, step: 0.1 },
+      { key: "stripShiftHorizontal",   label: "Move left / right",     type: "mm", min: -8,  max: 8,  step: 0.1 },
+      { key: "stripFontSize",          label: "Text size",             type: "mm", min: 0,   max: 16, step: 0.05, def: 7.89 },
+      { key: "stripStrokeWidth",       label: "Navy outline thickness",type: "mm", min: 0,   max: 3,  step: 0.05, def: 0.89 },
+      { key: "stripFontFamily",        label: "Font",                  type: "font", def: "Bestime" },
+
+      { group: "Validity date (yellow bar)" },
+      { key: "validityShiftDown",      label: "Move up / down",        type: "mm", min: -5,  max: 5,  step: 0.1 },
+      { key: "validityShiftHorizontal",label: "Move left / right",     type: "mm", min: -8,  max: 8,  step: 0.1 },
+      { key: "validityFontSize",       label: "Text size",             type: "mm", min: 0,   max: 8,  step: 0.05, def: 3.35 },
+      { key: "validityFontFamily",     label: "Font",                  type: "font", def: "Bestime" },
+
+      { group: "Barcode & code" },
+      { key: "barcodeShiftDown",       label: "Move up / down",        type: "mm", min: -12, max: 12, step: 0.1 },
+      { key: "barcodeShiftHorizontal", label: "Move left / right",     type: "mm", min: -12, max: 12, step: 0.1 },
+      { key: "barcodeWidth",           label: "Barcode width",         type: "mm", min: 0,   max: 90, step: 0.5,  def: 60.3 },
+      { key: "barcodeHeight",          label: "Barcode height",        type: "mm", min: 0,   max: 40, step: 0.5,  def: 14.5 },
+      { key: "codeFontSize",           label: "Code text size",        type: "mm", min: 0,   max: 6,  step: 0.05, def: 2.96 },
+      { key: "codeFontFamily",         label: "Code font",             type: "font", def: "Skynight" },
+    ];
+
+    const FONT_FAMILIES = ["Bestime", "Skynight"];
+
+    const params = new URLSearchParams(location.search);
+    const previewUrl = params.get("preview");
+    const stagingId = params.get("stagingId");
+    const size = params.get("size") || "small";
+
+    const frame = document.getElementById("frame");
+    const slidersEl = document.getElementById("sliders");
+    const stagingInput = document.getElementById("stagingId");
+    const sizeInput = document.getElementById("size");
+
+    if (!previewUrl || !stagingId) {
+      document.getElementById("msg").textContent = "Missing preview or staging — go back and use “Preview & adjust layout”.";
+      document.getElementById("msg").className = "error";
+    } else {
+      frame.src = previewUrl;
+      stagingInput.value = stagingId;
+      sizeInput.value = size;
+      document.getElementById("headerMeta").textContent =
+        "Staging ready — no need to re-upload the file.";
+    }
+
+    // Restore form fields from sessionStorage (set by index before preview-only)
+    try {
+      const snap = JSON.parse(sessionStorage.getItem("couponFormReview") || "{}");
+      for (const [k, v] of Object.entries(snap)) {
+        const el = document.getElementById(k);
+        if (el) el.value = v;
+      }
+    } catch (_) {}
+
+    /* Adjustments are mirrored into sessionStorage on every change, so going
+       Back (or reloading, or coming here from a fresh preview) restores
+       exactly what you had instead of snapping everything to zero. */
+    const LAYOUT_STORE = "couponLayoutState";
+    const layoutState = {};
+    try {
+      Object.assign(layoutState, JSON.parse(sessionStorage.getItem(LAYOUT_STORE) || "{}"));
+    } catch (_) {}
+
+    function persistLayout() {
+      try {
+        sessionStorage.setItem(LAYOUT_STORE, JSON.stringify(layoutState));
+      } catch (_) {}
+    }
+
+    /** "9.5mm" -> 9.5 ; anything unparseable -> null */
+    function mmValue(v) {
+      if (v == null) return null;
+      const n = parseFloat(String(v));
+      return Number.isNaN(n) ? null : n;
+    }
+
+    LAYOUT_KEYS.forEach((cfg) => {
+      // Section heading
+      if (cfg.group) {
+        const h = document.createElement("h3");
+        h.className = "ctrl-group";
+        h.textContent = cfg.group;
+        slidersEl.appendChild(h);
+        return;
+      }
+
+      const { key, label: labelText, type, min, max, step, def } = cfg;
+      const id = "layout_" + key;
+      const div = document.createElement("div");
+      div.className = "ctrl";
+
+      const label = document.createElement("label");
+      label.htmlFor = id;
+      label.textContent = labelText;
+      div.appendChild(label);
+
+      // ---- Font picker ----
+      if (type === "font") {
+        const select = document.createElement("select");
+        select.id = id;
+        const dflt = document.createElement("option");
+        dflt.value = "";
+        dflt.textContent = "Default (" + def + ")";
+        select.appendChild(dflt);
+        FONT_FAMILIES.forEach((f) => {
+          const o = document.createElement("option");
+          o.value = f;
+          o.textContent = f;
+          select.appendChild(o);
+        });
+        if (layoutState[key]) select.value = layoutState[key];
+        select.addEventListener("change", () => {
+          if (select.value) layoutState[key] = select.value;
+          else delete layoutState[key];
+          persistLayout();
+          applyLayout();
+        });
+        div.appendChild(select);
+        slidersEl.appendChild(div);
+        return;
+      }
+
+      // ---- Slider + number box, kept in sync both ways ----
+      const row = document.createElement("div");
+      row.className = "ctrl-row";
+
+      const range = document.createElement("input");
+      range.type = "range";
+      range.id = id;
+      range.min = String(min);
+      range.max = String(max);
+      range.step = String(step);
+      range.value = "0";
+
+      // Number-only box for exact values. Not clamped to the slider range —
+      // type anything, the slider just pins to its nearest end.
+      const num = document.createElement("input");
+      num.type = "number";
+      num.className = "num";
+      num.step = String(step);
+      num.placeholder = def != null ? String(def) : "0";
+      num.setAttribute("aria-label", labelText + " (mm)");
+
+      const unit = document.createElement("span");
+      unit.className = "unit";
+      unit.textContent = "mm";
+
+      const commit = (raw, syncRange, syncNum) => {
+        if (raw === "" || raw == null || Number.isNaN(Number(raw))) {
+          delete layoutState[key];
+          if (syncRange) range.value = "0";
+          if (syncNum) num.value = "";
+          persistLayout();
+          applyLayout();
+          return;
+        }
+        const v = Number(raw);
+        if (v === 0) delete layoutState[key];
+        else layoutState[key] = v + "mm";
+        if (syncRange) range.value = String(Math.min(max, Math.max(min, v)));
+        if (syncNum) num.value = String(v);
+        persistLayout();
+        applyLayout();
+      };
+
+      // Seed both controls from whatever was saved earlier
+      const saved = mmValue(layoutState[key]);
+      if (saved != null) {
+        range.value = String(Math.min(max, Math.max(min, saved)));
+        num.value = String(saved);
+      }
+
+      range.addEventListener("input", () => commit(range.value, false, true));
+      num.addEventListener("input", () => commit(num.value, true, false));
+
+      row.appendChild(range);
+      row.appendChild(num);
+      row.appendChild(unit);
+      div.appendChild(row);
+      slidersEl.appendChild(div);
+    });
+
+    // Reset everything back to the design defaults
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      Object.keys(layoutState).forEach((k) => delete layoutState[k]);
+      slidersEl.querySelectorAll('input[type="range"]').forEach((r) => (r.value = "0"));
+      slidersEl.querySelectorAll('input[type="number"]').forEach((n) => (n.value = ""));
+      slidersEl.querySelectorAll("select").forEach((s) => (s.value = ""));
+      persistLayout();
+      applyLayout();
+    });
+
+    let injectStyle = null;
+    function applyLayout() {
+      if (!frame.contentDocument) return;
+      fetch("/api/layout-css", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ layout: layoutState, size }),
+      })
+        .then((r) => r.text())
+        .then((css) => {
+          const doc = frame.contentDocument;
+          if (!doc) return;
+          if (!injectStyle) {
+            injectStyle = doc.createElement("style");
+            injectStyle.id = "layout-live";
+            doc.head.appendChild(injectStyle);
+          }
+          injectStyle.textContent = css;
+        })
+        .catch(() => {});
+    }
+
+    frame.addEventListener("load", () => {
+      injectStyle = null;
+      applyLayout();
+    });
+
+    document.getElementById("genForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("msg");
+      const btn = document.getElementById("genBtn");
+      msg.textContent = "Generating PDF…";
+      msg.className = "";
+      btn.disabled = true;
+
+      const formData = new FormData();
+      formData.set("stagingId", stagingId);
+      formData.set("voucherType", document.getElementById("voucherType").value);
+      formData.set("discountText", document.getElementById("discountText").value);
+      formData.set("giftValue", document.getElementById("giftValue").value);
+      formData.set("validUntil", document.getElementById("validUntil").value);
+      formData.set("size", size);
+      Object.entries(layoutState).forEach(([k, v]) => {
+        formData.set("layout_" + k, v);
+      });
+
+      try {
+        const res = await fetch("/api/generate", { method: "POST", body: formData });
+
+        // A crash or a proxy error can return HTML, not JSON — don't let that
+        // surface as a bare "Unexpected token" with no clue what went wrong.
+        let data;
+        const raw = await res.text();
+        try {
+          data = JSON.parse(raw);
+        } catch (_) {
+          throw new Error(
+            "Server returned an unexpected response (HTTP " + res.status + "). Check the terminal running the server.",
+          );
+        }
+        if (!res.ok) throw new Error(data.error || "Failed (HTTP " + res.status + ")");
+
+        const a = document.getElementById("downloadAfter");
+        a.href = data.file;
+        a.hidden = false;
+
+        // Start the download immediately rather than relying on the user
+        // spotting the link. The link stays visible as a fallback.
+        const tmp = document.createElement("a");
+        tmp.href = data.file;
+        tmp.download = data.file.split("/").pop() || "coupons.pdf";
+        document.body.appendChild(tmp);
+        tmp.click();
+        tmp.remove();
+
+        // Refresh the preview frame so it reflects the PDF just produced.
+        if (data.preview) {
+          injectStyle = null;
+          frame.src = data.preview;
+        }
+
+        msg.textContent =
+          "Done — " + data.count + " vouchers. Downloading… you can keep adjusting and generate again.";
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = "error";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

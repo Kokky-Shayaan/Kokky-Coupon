@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coupon Generator</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #fffdf8;
+      --ink: #1f2937;
+      --accent: #0f766e;
+      --accent-2: #115e59;
+      --line: #d6d3d1;
+      --error: #b91c1c;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at top right, #e4efe9, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: min(920px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+    }
+
+    p { margin: 0 0 20px; color: #4b5563; }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field { display: grid; gap: 6px; }
+    .full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      padding: 12px 18px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover { background: var(--accent-2); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    button.secondary {
+      background: #4b5563;
+    }
+    button.secondary:hover { background: #374151; }
+
+    .actions {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .message {
+      grid-column: 1 / -1;
+      font-size: 0.92rem;
+    }
+
+    .message.error { color: var(--error); }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #fff;
+      background: #1d4ed8;
+      font-weight: 600;
+    }
+
+    /* Voucher type as radios — clearer than a dropdown */
+    .voucher-type-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      align-items: flex-start;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    .voucher-type-group legend {
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0 6px;
+    }
+    .voucher-type-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .voucher-type-option input {
+      margin-top: 4px;
+      width: auto;
+      accent-color: var(--accent);
+    }
+    .voucher-type-option span {
+      line-height: 1.35;
+      color: var(--ink);
+    }
+    .voucher-type-option .hint {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 400;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    /* Preview panel — same layout as PDF, shown after generate */
+    .preview-section {
+      grid-column: 1 / -1;
+      margin-top: 8px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .preview-section.visible {
+      display: flex;
+    }
+    .preview-section h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .preview-section .preview-frame-wrap {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #e5e7eb;
+      max-height: min(70vh, 560px);
+      min-height: 280px;
+    }
+    .preview-section iframe {
+      display: block;
+      width: 100%;
+      height: min(70vh, 560px);
+      border: 0;
+      background: #fff;
+    }
+
+    details.layout-tweaks {
+      grid-column: 1 / -1;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: #fafafa;
+    }
+    details.layout-tweaks summary {
+      cursor: pointer;
+      font-weight: 600;
+      user-select: none;
+    }
+    details.layout-tweaks .layout-hint {
+      margin: 10px 0 12px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    details.layout-tweaks .layout-hint code {
+      background: #eee;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .layout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    h3.tweak-group {
+      margin: 18px 0 8px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 4px;
+    }
+    h3.tweak-group:first-of-type { margin-top: 4px; }
+    @media (max-width: 760px) {
+      form { grid-template-columns: 1fr; }
+      .layout-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Kokky Voucher Generator — candy design</h1>
+    <p>Set shared voucher details, import a code list (<code>.xlsx</code> or <code>.csv</code>), then download one combined PDF. Both voucher types use the same artwork — only the red side strip changes. Terms &amp; Conditions are printed as part of the design and are not editable here.</p>
+
+    <form id="couponForm">
+      <fieldset class="field full voucher-type-group">
+        <legend>Voucher type</legend>
+        <label class="voucher-type-option">
+          <input type="radio" name="voucherType" value="discount" checked />
+          <span>
+            Discount voucher
+          </span>
+        </label>
+        <label class="voucher-type-option">
+          <input type="radio" name="voucherType" value="gift" />
+          <span>
+            Gift voucher
+          </span>
+        </label>
+      </fieldset>
+
+      <div class="field" id="fieldDiscountText">
+        <label for="discountText">Discount text (side strip)</label>
+        <input id="discountText" name="discountText" placeholder="20% or 20% OFF" />
+      </div>
+
+      <div class="field" id="fieldGiftValue" hidden>
+        <label for="giftValue">Gift value (side strip)</label>
+        <input id="giftValue" name="giftValue" placeholder="MVR 350" />
+      </div>
+
+      <div class="field">
+        <label for="validUntil">Valid Until</label>
+        <input id="validUntil" name="validUntil" type="date" required />
+      </div>
+
+      <div class="field">
+        <label for="size">Coupon Size</label>
+        <select id="size" name="size">
+          <option value="small">Small (12 per page)</option>
+          <option value="large">Large (3 per page)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="couponFile">Coupon File (.xlsx or .csv)</label>
+        <input id="couponFile" name="couponFile" type="file" accept=".xlsx,.csv" required />
+      </div>
+
+      <details class="field full layout-tweaks">
+        <summary>Layout tweaks (micro-adjustments)</summary>
+        <p class="layout-hint">Optional — leave blank to keep the default. All measurements are in <strong>mm</strong>; negative values move up or left. Terms &amp; Conditions are part of the artwork and have no controls here.</p>
+
+        <h3 class="tweak-group">Gift value / discount text (red strip)</h3>
+        <div class="layout-grid">
+          <div class="field">
+            <label for="layout_stripShiftVertical">Move up / down (mm)</label>
+            <input id="layout_stripShiftVertical" name="layout_stripShiftVertical" type="number" step="0.1" placeholder="e.g. 4 or -4" />
+          </div>
+          <div class="field">
+            <label for="layout_stripShiftHorizontal">Move left / right (mm)</label>
+            <input id="layout_stripShiftHorizontal" name="layout_stripShiftHorizontal" type="number" step="0.1" placeholder="e.g. 2 or -2" />
+          </div>
+          <div class="field">
+            <label for="layout_stripFontSize">Text size (mm)</label>
+            <input id="layout_stripFontSize" name="layout_stripFontSize" type="number" step="0.05" min="0" placeholder="default 7.9" />
+          </div>
+          <div class="field">
+            <label for="layout_stripStrokeWidth">Navy outline thickness (mm)</label>
+            <input id="layout_stripStrokeWidth" name="layout_stripStrokeWidth" type="number" step="0.05" min="0" placeholder="default 0.89" />
+          </div>
+          <div class="field">
+            <label for="layout_stripFontFamily">Font</label>
+            <select id="layout_stripFontFamily" name="layout_stripFontFamily">
+              <option value="">Default (Bestime)</option>
+              <option value="Bestime">Bestime</option>
+              <option value="Skynight">Skynight</option>
+            </select>
+          </div>
+        </div>
+
+        <h3 class="tweak-group">Validity date (yellow bar)</h3>
+        <div class="layout-grid">
+          <div class="field">
+            <label for="layout_validityShiftDown">Move up / down (mm)</label>
+            <input id="layout_validityShiftDown" name="layout_validityShiftDown" type="number" step="0.1" placeholder="e.g. 1 or -1" />
+          </div>
+          <div class="field">
+            <label for="layout_validityShiftHorizontal">Move left / right (mm)</label>
+            <input id="layout_validityShiftHorizontal" name="layout_validityShiftHorizontal" type="number" step="0.1" placeholder="e.g. 2 or -2" />
+          </div>
+          <div class="field">
+            <label for="layout_validityFontSize">Text size (mm)</label>
+            <input id="layout_validityFontSize" name="layout_validityFontSize" type="number" step="0.05" min="0" placeholder="default 3.35" />
+          </div>
+          <div class="field">
+            <label for="layout_validityFontFamily">Font</label>
+            <select id="layout_validityFontFamily" name="layout_validityFontFamily">
+              <option value="">Default (Bestime)</option>
+              <option value="Bestime">Bestime</option>
+              <option value="Skynight">Skynight</option>
+            </select>
+          </div>
+        </div>
+
+        <h3 class="tweak-group">Barcode &amp; code</h3>
+        <div class="layout-grid">
+          <div class="field">
+            <label for="layout_barcodeShiftDown">Move up / down (mm)</label>
+            <input id="layout_barcodeShiftDown" name="layout_barcodeShiftDown" type="number" step="0.1" placeholder="e.g. 3 or -3" />
+          </div>
+          <div class="field">
+            <label for="layout_barcodeShiftHorizontal">Move left / right (mm)</label>
+            <input id="layout_barcodeShiftHorizontal" name="layout_barcodeShiftHorizontal" type="number" step="0.1" placeholder="e.g. 2 or -2" />
+          </div>
+          <div class="field">
+            <label for="layout_barcodeWidth">Barcode width (mm)</label>
+            <input id="layout_barcodeWidth" name="layout_barcodeWidth" type="number" step="0.5" min="0" placeholder="default 60.3" />
+          </div>
+          <div class="field">
+            <label for="layout_barcodeHeight">Barcode height (mm)</label>
+            <input id="layout_barcodeHeight" name="layout_barcodeHeight" type="number" step="0.5" min="0" placeholder="default 14.5" />
+          </div>
+          <div class="field">
+            <label for="layout_codeFontSize">Code text size (mm)</label>
+            <input id="layout_codeFontSize" name="layout_codeFontSize" type="number" step="0.05" min="0" placeholder="default 2.96" />
+          </div>
+          <div class="field">
+            <label for="layout_codeFontFamily">Code font</label>
+            <select id="layout_codeFontFamily" name="layout_codeFontFamily">
+              <option value="">Default (Skynight)</option>
+              <option value="Bestime">Bestime</option>
+              <option value="Skynight">Skynight</option>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button id="previewReviewBtn" type="button" class="secondary">Preview &amp; adjust layout</button>
+        <button id="generateBtn" type="submit">Generate PDF</button>
+        <a id="downloadLink" class="download-link" href="#" hidden>Download All PDFs</a>
+      </div>
+
+      <div id="message" class="message" aria-live="polite"></div>
+
+      <section id="previewSection" class="preview-section" aria-label="Coupon preview">
+        <h2>Preview — how coupons will look in the PDF</h2>
+        <p style="margin:0;font-size:0.9rem;color:#6b7280;">Scroll inside the frame to see all pages. Then download when happy.</p>
+        <div class="preview-frame-wrap">
+          <iframe id="previewFrame" title="Coupon preview" sandbox="allow-same-origin allow-scripts"></iframe>
+        </div>
+      </section>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById("couponForm");
+    const message = document.getElementById("message");
+    const downloadLink = document.getElementById("downloadLink");
+    const generateBtn = document.getElementById("generateBtn");
+
+    const fieldDiscountText = document.getElementById("fieldDiscountText");
+    const fieldGiftValue = document.getElementById("fieldGiftValue");
+    const discountInput = document.getElementById("discountText");
+    const giftInput = document.getElementById("giftValue");
+    const voucherTypeRadios = document.querySelectorAll('input[name="voucherType"]');
+
+    function getVoucherType() {
+      const checked = document.querySelector('input[name="voucherType"]:checked');
+      return checked ? checked.value : "discount";
+    }
+
+    function syncVoucherFields() {
+      const isGift = getVoucherType() === "gift";
+      fieldDiscountText.hidden = isGift;
+      fieldGiftValue.hidden = !isGift;
+      discountInput.required = !isGift;
+      giftInput.required = isGift;
+    }
+    voucherTypeRadios.forEach((radio) =>
+      radio.addEventListener("change", syncVoucherFields),
+    );
+    syncVoucherFields();
+
+    /* ---- Remember what was typed -----------------------------------------
+       Everything except the file picker (browsers won't let us refill that)
+       is mirrored into sessionStorage, so coming Back from the review page
+       leaves the form and all micro-adjustments exactly as you left them. */
+    const FORM_STORE = "couponFormState";
+    const LAYOUT_STORE = "couponLayoutState";
+
+    function persistableFields() {
+      return Array.from(
+        form.querySelectorAll('input:not([type="file"]), select, textarea'),
+      ).filter((el) => el.name || el.id);
+    }
+
+    function saveForm() {
+      const snap = { voucherType: getVoucherType() };
+      persistableFields().forEach((el) => {
+        if (el.type === "radio" || el.type === "checkbox") return;
+        snap[el.id || el.name] = el.value;
+      });
+      try {
+        sessionStorage.setItem(FORM_STORE, JSON.stringify(snap));
+      } catch (_) {}
+
+      // Keep the layout_* fields in the same shape the review page uses, so
+      // the two screens stay in step in both directions.
+      const layout = {};
+      persistableFields().forEach((el) => {
+        const key = el.id || el.name;
+        if (!key.startsWith("layout_") || el.value === "") return;
+        const k = key.slice("layout_".length);
+        layout[k] = /^-?\d+(\.\d+)?$/.test(el.value) ? el.value + "mm" : el.value;
+      });
+      try {
+        sessionStorage.setItem(LAYOUT_STORE, JSON.stringify(layout));
+      } catch (_) {}
+    }
+
+    function restoreForm() {
+      let snap = {};
+      try {
+        snap = JSON.parse(sessionStorage.getItem(FORM_STORE) || "{}");
+      } catch (_) {}
+
+      // Layout values may have been changed on the review page since — those win.
+      let layout = {};
+      try {
+        layout = JSON.parse(sessionStorage.getItem(LAYOUT_STORE) || "{}");
+      } catch (_) {}
+      for (const [k, v] of Object.entries(layout)) {
+        const el = document.getElementById("layout_" + k);
+        if (!el) continue;
+        el.value = el.tagName === "SELECT" ? v : parseFloat(v);
+      }
+
+      for (const [k, v] of Object.entries(snap)) {
+        if (k === "voucherType") {
+          const radio = document.querySelector(
+            'input[name="voucherType"][value="' + v + '"]',
+          );
+          if (radio) radio.checked = true;
+          continue;
+        }
+        if (Object.prototype.hasOwnProperty.call(layout, k.replace(/^layout_/, ""))) continue;
+        const el = document.getElementById(k);
+        if (el && el.type !== "file") el.value = v;
+      }
+      syncVoucherFields();
+
+      // Open the tweaks panel if any adjustment is set, so it isn't hidden.
+      if (Object.keys(layout).length) {
+        const details = document.querySelector("details.layout-tweaks");
+        if (details) details.open = true;
+      }
+    }
+
+    restoreForm();
+    form.addEventListener("input", saveForm);
+    form.addEventListener("change", saveForm);
+
+    const previewSection = document.getElementById("previewSection");
+    const previewFrame = document.getElementById("previewFrame");
+
+    document.getElementById("previewReviewBtn").addEventListener("click", async () => {
+      const fileInput = document.getElementById("couponFile");
+      if (!fileInput.files || !fileInput.files.length) {
+        message.textContent = "Choose a coupon file first.";
+        message.className = "message error";
+        return;
+      }
+      message.textContent = "Building HTML preview…";
+      message.className = "message";
+      generateBtn.disabled = true;
+      try {
+        const formData = new FormData(form);
+        formData.set("voucherType", getVoucherType());
+        if (getVoucherType() === "gift") {
+          formData.set("giftValue", (giftInput.value || "").trim());
+          formData.delete("discountText");
+        } else {
+          formData.set("discountText", (discountInput.value || "").trim());
+          formData.delete("giftValue");
+        }
+        const res = await fetch("/api/preview-only", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Preview failed");
+        sessionStorage.setItem(
+          "couponFormReview",
+          JSON.stringify({
+            voucherType: getVoucherType(),
+            discountText: discountInput.value || "",
+            giftValue: giftInput.value || "",
+            validUntil: document.getElementById("validUntil").value,
+            size: document.getElementById("size").value,
+          }),
+        );
+        const q = new URLSearchParams({
+          preview: data.preview,
+          stagingId: data.stagingId,
+          size: data.size || "small",
+        });
+        window.location.href = "/review.html?" + q.toString();
+      } catch (e) {
+        message.textContent = e.message;
+        message.className = "message error";
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.textContent = "Generating PDF...";
+      message.className = "message";
+      downloadLink.hidden = true;
+      previewSection.classList.remove("visible");
+      previewFrame.removeAttribute("src");
+      generateBtn.disabled = true;
+
+      try {
+        const formData = new FormData(form);
+        // Ensure server always receives voucher type (multipart + radio can omit or misparse)
+        formData.set("voucherType", getVoucherType());
+        if (getVoucherType() === "gift") {
+          formData.set("giftValue", (giftInput.value || "").trim());
+          formData.delete("discountText"); // avoid stale discount text affecting layout
+        } else {
+          formData.set("discountText", (discountInput.value || "").trim());
+          formData.delete("giftValue");
+        }
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          body: formData,
+        });
+
+        // Surface crashes properly instead of a bare JSON parse error.
+        let data;
+        const raw = await response.text();
+        try {
+          data = JSON.parse(raw);
+        } catch (_) {
+          throw new Error(
+            `Server returned an unexpected response (HTTP ${response.status}). Check the terminal running the server.`,
+          );
+        }
+        if (!response.ok) {
+          throw new Error(data.error || `Request failed (HTTP ${response.status})`);
+        }
+
+        downloadLink.href = data.file;
+        downloadLink.hidden = false;
+        downloadLink.setAttribute("download", "coupons.pdf");
+
+        // Start the download rather than waiting to be noticed.
+        const tmp = document.createElement("a");
+        tmp.href = data.file;
+        tmp.download = data.file.split("/").pop() || "coupons.pdf";
+        document.body.appendChild(tmp);
+        tmp.click();
+        tmp.remove();
+
+        if (data.preview) {
+          previewFrame.src = data.preview;
+          previewSection.classList.add("visible");
+          previewSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
+        message.textContent = `Generated ${data.count} vouchers — downloading. Preview below; the link stays available if the download did not start.`;
+      } catch (error) {
+        message.textContent = error.message;
+        message.className = "message error";
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
