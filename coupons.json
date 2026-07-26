@@ -1,0 +1,22 @@
+{
+  "size": "large",
+  "layout": {
+    "stripFontSize": "7.9mm",
+    "stripStrokeWidth": "0.89mm",
+    "barcodeHeight": "14.5mm"
+  },
+  "coupons": [
+    {
+      "code": "044F-BFB9-4B64",
+      "voucherType": "gift",
+      "giftValue": "MVR 350",
+      "validUntil": "2026-02-22"
+    },
+    {
+      "code": "SUMMER2026X",
+      "voucherType": "discount",
+      "discountText": "20% OFF",
+      "validUntil": "2026-12-31"
+    }
+  ]
+}

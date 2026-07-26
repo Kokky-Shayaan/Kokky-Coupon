@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    /* ------------------------------------------------------------------
+       Kokky voucher — candy design (v2)
+
+       assets/bg.png is the supplied Illustrator artwork, UNMODIFIED. Every
+       fixed element lives in that image: candy pattern, red strip, white
+       card, Kokky logo, "Gift Voucher" title, the yellow bar, and the whole
+       Terms & Conditions block. Nothing in this file draws over them.
+
+       Only three things are generated on top:
+         1. the gift value / discount text, rotated on the red strip
+         2. the validity date, inside the yellow bar
+         3. the barcode and its human-readable code
+
+       Geometry: every position is a PERCENTAGE of the coupon box, measured
+       off the artwork (197.23 x 88.77 mm, aspect 2.2217). Because the aspect
+       ratio is locked, the same percentages hold at any print size — small
+       and large differ only in --cw, the coupon width. Font sizes are
+       calc(var(--cw) * fraction) so they scale with it.
+       ------------------------------------------------------------------ */
+
+    :root {
+      --yellow: #facf0b;
+      --navy: #182c48;
+      --red: #ed1a38;
+
+      /* --- Artwork anchors (% of the coupon box) --- */
+      --strip-w: 17.5%;
+
+      --bar-l: 30.50%;
+      --bar-r: 53.73%;
+      --bar-t: 62.71%;
+      --bar-b: 70.14%;
+
+      --barcode-l: 59.42%;
+      --barcode-r: 90.00%;
+      --barcode-t: 58.00%;
+      --barcode-b: 78.50%;
+
+      /* --- Type (fraction of the coupon width) --- */
+      --fs-strip: 0.0400;
+      --fs-validity: 0.0170;
+      --fs-code: 0.0150;
+
+      /* Navy keyline on the strip value, matching the Kokky logo's outline */
+      --stroke-strip: 0.0045;
+
+      /* --- Font families (overridable per element from the form) --- */
+      --ff-strip: "Bestime";
+      --ff-validity: "Bestime";
+      --ff-code: "Skynight";
+    }
+
+    {{CSS_VARIABLES}}
+
+    @page { size: A4; margin: 5mm; }
+    html, body { margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 200mm;
+      height: 287mm;
+      display: grid;
+      grid-template-columns: repeat(var(--page-cols, 1), 1fr);
+      grid-auto-rows: min-content;
+      justify-items: center;
+      gap: 0;
+      page-break-after: always;
+    }
+
+    .coupon {
+      position: relative;
+      width: var(--coupon-width, 197.23mm);
+      height: var(--coupon-height, 88.77mm);
+      --cw: var(--coupon-width, 197.23mm);
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .bg {
+      position: absolute;
+      inset: 0;
+      background-image: url("{{BG_DATA_URI}}");
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
+      z-index: 0;
+    }
+
+    .layer {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* ---------------- Left red strip: gift value / discount text -------- */
+
+    .strip {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: var(--strip-w);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .strip-text {
+      /* Rotated bottom-to-top. Swap to rotate(90deg) for top-to-bottom. */
+      transform: rotate(-90deg);
+      transform-origin: center;
+      white-space: nowrap;
+      font-family: var(--ff-strip), sans-serif;
+      font-size: calc(var(--cw) * var(--fs-strip));
+      line-height: 1;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      /* White fill with a chunky navy outline, like the logo lettering.
+         paint-order keeps the stroke behind the fill so the white stays
+         at full weight and the outline grows outwards. */
+      color: #fff;
+      -webkit-text-stroke: calc(var(--cw) * var(--stroke-strip)) var(--navy);
+      paint-order: stroke fill;
+    }
+
+    /* ---------------- Validity date, inside the yellow bar -------------- */
+
+    .validity {
+      position: absolute;
+      left: var(--bar-l);
+      top: var(--bar-t);
+      width: calc(var(--bar-r) - var(--bar-l));
+      height: calc(var(--bar-b) - var(--bar-t));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0.5em;
+      font-family: var(--ff-validity), sans-serif;
+      font-size: calc(var(--cw) * var(--fs-validity));
+      line-height: 1;
+      color: var(--navy);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* ---------------- Barcode + human-readable code --------------------- */
+
+    .barcode-block {
+      position: absolute;
+      left: var(--barcode-l);
+      top: var(--barcode-t);
+      width: calc(var(--barcode-r) - var(--barcode-l));
+      height: calc(var(--barcode-b) - var(--barcode-t));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .barcode {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .barcode svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .code {
+      margin-top: 0.35em;
+      font-family: var(--ff-code), sans-serif;
+      font-size: calc(var(--cw) * var(--fs-code));
+      letter-spacing: 0.12em;
+      line-height: 1;
+      color: var(--navy);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    {{FONT_FACE_CSS}}
+  </style>
+</head>
+
+<body>
+  {{PAGES_HTML}}
+  {{AUTOFIT_SCRIPT}}
+</body>
+</html>

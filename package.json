@@ -1,0 +1,21 @@
+{
+  "name": "coupon-gen-v2",
+  "version": "1.0.0",
+  "description": "Kokky voucher PDF generator — candy design",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "generate": "node render_pdf.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bwip-js": "^4.8.0",
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
+    "playwright": "^1.58.2",
+    "xlsx": "^0.18.5"
+  }
+}
