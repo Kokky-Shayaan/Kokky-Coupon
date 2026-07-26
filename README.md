@@ -1,7 +1,7 @@
-# Kokky Voucher Generator — candy design (v2)
+# Kokky Voucher Generator - New
 
-A standalone copy of the original coupon generator, restyled to the candy
-artwork. xlsx/csv import, gift and discount vouchers, Code 128 barcodes, two
+A standalone copy of the original coupon generator, restyled to the Kokky rebrand. 
+xlsx/csv import, gift and discount vouchers, Code 128 barcodes, two
 print sizes, the live HTML review page, and the CLI path all work as before.
 
 Runs on **port 3001** by default so it can sit alongside the original
