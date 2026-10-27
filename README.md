@@ -37,11 +37,17 @@ element is exactly as designed:
 | White card and its navy outline | Validity date (inside the yellow bar) |
 | Kokky logo | Barcode |
 | "Gift Voucher" title | Human-readable code |
-| **Terms & Conditions — heading and all body text** | |
+| **Terms & Conditions — heading and bullets 1–3** | 4th T&C bullet (discount / promotion rule) |
 | Yellow bar | |
 
-Because the terms are printed as part of the design, there is no Terms box on
-the form and no terms-related layout controls. To change the wording, edit the
+The 4th bullet ("The discount applies to regular priced items and items which
+are not a part of an on-going promotion") is drawn on top in Skynight, using
+`assets/tc-star.png` — the star cropped from the artwork — so it matches the
+printed bullets. It appears on every voucher. Its wording is `TC_EXTRA_TEXT` in
+`render_pdf.js`; position/size are the `--tc-*` variables in `template.html`.
+
+There is no Terms box on the form and no terms-related layout controls. To
+change the wording of bullets 1–3, edit the
 Illustrator file and rebuild `bg.png` (see below).
 
 **Both voucher types show the same "Gift Voucher" title** — it is part of the
@@ -63,7 +69,7 @@ All anchors live in one `:root` block at the top of `template.html`:
 |---|---|---|
 | `--strip-w` | 17.5% | Red strip width |
 | `--bar-l` … `--bar-b` | 30.50–53.73%, 62.71–70.14% | Yellow bar (validity date) |
-| `--barcode-l` … `--barcode-b` | 59.42–90%, 58–78.5% | Barcode block |
+| `--barcode-l` … `--barcode-b` | 59.42–90%, 71–80.5% | Barcode block (below the 4th T&C bullet) |
 | `--fs-strip` | 0.0400 | Strip value size (7.89mm at large) |
 | `--fs-validity` | 0.0170 | Validity date size (3.35mm at large) |
 | `--fs-code` | 0.0150 | Code size (2.96mm at large) |
@@ -146,7 +152,7 @@ Distances are mm; negative moves up or left. Blank means "use the default".
 | `barcodeShiftDown` | 0 | Move up / down |
 | `barcodeShiftHorizontal` | 0 | Move left / right |
 | `barcodeWidth` | 60.3mm | Barcode width |
-| `barcodeHeight` | 14.5mm | Barcode height (opts the bar out of flex stretch) |
+| `barcodeHeight` | auto | Barcode height (opts the bar out of flex stretch; above ~5mm on large it will overlap the 4th T&C bullet) |
 | `codeFontSize` | 2.96mm | Code text size |
 | `codeFontFamily` | Skynight | Code font |
 

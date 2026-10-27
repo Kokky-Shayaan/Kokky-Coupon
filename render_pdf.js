@@ -7,7 +7,7 @@
  * Differences from v1:
  *  - Fonts are Bestime and Skynight.
  *  - assets/bg.png is the Illustrator artwork UNMODIFIED. The "Gift Voucher"
- *    title, the "Terms & Conditions" heading AND the T&C body text are all
+ *    title, the "Terms & Conditions" heading and T&C bullets 1-3 are all
  *    part of that image, so none of them are generated here. Both voucher
  *    types show the same title; only the red strip text differs.
  *  - The validity date sits inside the yellow bar.
@@ -121,13 +121,17 @@ function escapeHtml(s = "") {
 }
 
 function barcodeSvg(text) {
-  return bwipjs.toSVG({
+  // preserveAspectRatio="none" lets the bars stretch to the full block width
+  // even though the block is now short (it sits under the 4th T&C bullet).
+  // Code 128 reads by relative bar widths, so uniform stretching is safe.
+  const svg = bwipjs.toSVG({
     bcid: "code128",
     text: String(text),
     scale: 2,
     height: 10,
     includetext: false,
   });
+  return svg.replace("<svg ", '<svg preserveAspectRatio="none" ');
 }
 
 function isGiftVoucher(c) {
@@ -172,6 +176,14 @@ function formatDisplayDate(inputDate = "") {
   });
 }
 
+/**
+ * 4th Terms & Conditions bullet, drawn on top of the artwork (bullets 1-3 are
+ * in bg.png). Wraps at the artwork's own text width. Shown on every voucher,
+ * gift and discount.
+ */
+const TC_EXTRA_TEXT =
+  "The discount applies to regular priced items and items which are not a part of an on-going promotion";
+
 function buildPagesHtml(coupons, perPage) {
   const pages = [];
   for (let i = 0; i < coupons.length; i += perPage) {
@@ -183,8 +195,8 @@ function buildPagesHtml(coupons, perPage) {
         const stripLine = stripTextForCoupon(c);
         const typeClass = gift ? "coupon--gift" : "coupon--discount";
 
-        // Markup is identical for both types — the title and the whole terms
-        // block are part of the artwork. Only the strip text differs.
+        // Markup is identical for both types — the title and T&C bullets 1-3
+        // are part of the artwork. Only the strip text differs.
         return `
       <div class="coupon ${typeClass}">
         <div class="bg"></div>
@@ -194,6 +206,9 @@ function buildPagesHtml(coupons, perPage) {
           </div>
 
           <div class="validity">Valid until ${formatDisplayDate(c.validUntil)}</div>
+
+          <img class="tc-star" src="{{TC_STAR_DATA_URI}}" alt="" />
+          <p class="tc-extra">${escapeHtml(TC_EXTRA_TEXT)}</p>
 
           <div class="barcode-block">
             <div class="barcode">${barcodeSvg(c.code)}</div>
@@ -417,6 +432,9 @@ async function generateCouponsHtml({
   const layoutCss = buildLayoutCss(layout, size);
   html = html.replace("{{CSS_VARIABLES}}", sizeCss + layoutCss);
   html = html.replace("{{PAGES_HTML}}", buildPagesHtml(coupons, config.perPage));
+  html = html
+    .split("{{TC_STAR_DATA_URI}}")
+    .join(toDataUri(path.join(__dirname, "assets", "tc-star.png")));
 
   // Inlined so the HTML preview and the printed PDF fit text identically.
   // Waits for the embedded fonts, otherwise it would measure fallback metrics.
